@@ -95,10 +95,6 @@ jobs:
         docker exec -t build /bin/bash -c "make build-cc-windows"
         docker exec -t build /bin/bash -c "make build-cc-macos"
         docker exec -t build /bin/bash -c "make build-cc-linux"
-        # docker exec -t build /bin/bash -c "make build-cc-linux-arm64v8"
-        # docker exec -t build /bin/bash -c "make build-cc-linux-arm32v7"
-        # docker exec -t build /bin/bash -c "make build-cc-linux-arm32v6"
-        # docker exec -t build /bin/bash -c "make build-cc-freebsd"
 
     - name: Zip UI
       run: docker exec -t build /bin/bash -c "make zip-ui"
