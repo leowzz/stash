@@ -158,10 +158,6 @@ jobs:
           dist/stash-macos
           dist/stash-win.exe
           dist/stash-linux
-          dist/stash-linux-arm64v8
-          dist/stash-linux-arm32v7
-          dist/stash-linux-arm32v6
-          dist/stash-freebsd
           dist/stash-ui.zip
           CHECKSUMS_SHA1
 
@@ -178,10 +174,6 @@ jobs:
           dist/stash-macos
           dist/stash-win.exe
           dist/stash-linux
-          dist/stash-linux-arm64v8
-          dist/stash-linux-arm32v7
-          dist/stash-linux-arm32v6
-          dist/stash-freebsd
           dist/stash-ui.zip
           CHECKSUMS_SHA1
         gzip: false
