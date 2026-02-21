@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.title="Stash" \
     org.opencontainers.image.description="An organizer for your porn, written in Go." \
     org.opencontainers.image.url="https://stashapp.cc" \
     org.opencontainers.image.documentation="https://docs.stashapp.cc" \
-    org.opencontainers.image.source="https://github.com/stashapp/stash" \
+    org.opencontainers.image.source="https://github.com/leowzz/stash" \
     org.opencontainers.image.licenses="AGPL-3.0"
 
 EXPOSE 9999
