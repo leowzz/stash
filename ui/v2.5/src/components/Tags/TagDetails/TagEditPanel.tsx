@@ -15,7 +15,7 @@ import { useToast } from "src/hooks/Toast";
 import { useConfigurationContext } from "src/hooks/Config";
 import { handleUnsavedChanges } from "src/utils/navigation";
 import { formikUtils } from "src/utils/form";
-import { yupFormikValidate, yupUniqueAliases } from "src/utils/yup";
+import { yupFormikValidate, yupRequiredStringArray } from "src/utils/yup";
 import { addUpdateStashID, getStashIDs } from "src/utils/stashIds";
 import { Tag, TagSelect } from "../TagSelect";
 import { Icon } from "src/components/Shared/Icon";
@@ -23,7 +23,7 @@ import StashBoxIDSearchModal from "src/components/Shared/StashBoxIDSearchModal";
 
 interface ITagEditPanel {
   tag: Partial<GQL.TagDataFragment>;
-  onSubmit: (tag: GQL.TagCreateInput) => Promise<void>;
+  onSubmit: (tag: GQL.TagCreateInput, andNew?: boolean) => Promise<void>;
   onCancel: () => void;
   onDelete: () => void;
   setImage: (image?: string | null) => void;
@@ -56,7 +56,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
   const schema = yup.object({
     name: yup.string().required(),
     sort_name: yup.string().ensure(),
-    aliases: yupUniqueAliases(intl, "name"),
+    aliases: yupRequiredStringArray(intl).defined(),
     description: yup.string().ensure(),
     parent_ids: yup.array(yup.string().required()).defined(),
     child_ids: yup.array(yup.string().required()).defined(),
@@ -122,15 +122,20 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
     };
   });
 
-  async function onSave(input: InputValues) {
+  async function onSave(input: InputValues, andNew?: boolean) {
     setIsLoading(true);
     try {
-      await onSubmit(input);
+      await onSubmit(input, andNew);
       formik.resetForm();
     } catch (e) {
       Toast.error(e);
     }
     setIsLoading(false);
+  }
+
+  async function onSaveAndNewClick() {
+    const input = schema.cast(formik.values);
+    onSave(input, true);
   }
 
   const encodingImage = ImageUtils.usePasteImage(onImageLoad);
@@ -213,6 +218,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
             onStashIDSelected(item);
             setIsStashIDSearchOpen(false);
           }}
+          initialQuery={tag?.name ?? ""}
         />
       )}
 
@@ -271,6 +277,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
           isEditing
           onToggleEdit={onCancel}
           onSave={formik.handleSubmit}
+          onSaveAndNew={isNew ? onSaveAndNewClick : undefined}
           saveDisabled={
             (!isNew && !formik.dirty) || !isEqual(formik.errors, {})
           }

@@ -137,7 +137,11 @@ type PerformerFilterType struct {
 	// Filter by circumcision
 	Circumcised *CircumcisionCriterionInput `json:"circumcised"`
 	// Filter by career length
-	CareerLength *StringCriterionInput `json:"career_length"`
+	CareerLength *StringCriterionInput `json:"career_length"` // deprecated
+	// Filter by career start year
+	CareerStart *IntCriterionInput `json:"career_start"`
+	// Filter by career end year
+	CareerEnd *IntCriterionInput `json:"career_end"`
 	// Filter by tattoos
 	Tattoos *StringCriterionInput `json:"tattoos"`
 	// Filter by piercings
@@ -166,6 +170,8 @@ type PerformerFilterType struct {
 	StashID *StringCriterionInput `json:"stash_id"`
 	// Filter by StashID Endpoint
 	StashIDEndpoint *StashIDCriterionInput `json:"stash_id_endpoint"`
+	// Filter by StashIDs Endpoint
+	StashIDsEndpoint *StashIDsCriterionInput `json:"stash_ids_endpoint"`
 	// Filter by rating expressed as 1-100
 	Rating100 *IntCriterionInput `json:"rating100"`
 	// Filter by url
@@ -222,6 +228,8 @@ type PerformerCreateInput struct {
 	PenisLength    *float64        `json:"penis_length"`
 	Circumcised    *CircumisedEnum `json:"circumcised"`
 	CareerLength   *string         `json:"career_length"`
+	CareerStart    *int            `json:"career_start"`
+	CareerEnd      *int            `json:"career_end"`
 	Tattoos        *string         `json:"tattoos"`
 	Piercings      *string         `json:"piercings"`
 	Aliases        *string         `json:"aliases"`
@@ -261,6 +269,8 @@ type PerformerUpdateInput struct {
 	PenisLength    *float64        `json:"penis_length"`
 	Circumcised    *CircumisedEnum `json:"circumcised"`
 	CareerLength   *string         `json:"career_length"`
+	CareerStart    *int            `json:"career_start"`
+	CareerEnd      *int            `json:"career_end"`
 	Tattoos        *string         `json:"tattoos"`
 	Piercings      *string         `json:"piercings"`
 	Aliases        *string         `json:"aliases"`

@@ -139,6 +139,7 @@ function useEmptyFilter(props: {
 
 export interface IFilterStateHook {
   filterMode: GQL.FilterMode;
+  defaultFilter?: ListFilterModel;
   defaultSort?: string;
   view?: View;
   useURL?: boolean;
@@ -149,7 +150,14 @@ export function useFilterState(
     config?: GQL.ConfigDataFragment;
   }
 ) {
-  const { filterMode, defaultSort, config, view, useURL } = props;
+  const {
+    filterMode,
+    defaultSort,
+    config,
+    view,
+    useURL,
+    defaultFilter: propDefaultFilter,
+  } = props;
 
   const [filter, setFilterState] = useState<ListFilterModel>(
     () =>
@@ -158,10 +166,13 @@ export function useFilterState(
 
   const emptyFilter = useEmptyFilter({ filterMode, defaultSort, config });
 
-  const { defaultFilter } = useDefaultFilter(emptyFilter, view);
+  const { defaultFilter: defaultFilterFromConfig } = useDefaultFilter(
+    emptyFilter,
+    view
+  );
 
   const { setFilter } = useFilterURL(filter, setFilterState, {
-    defaultFilter,
+    defaultFilter: propDefaultFilter ?? defaultFilterFromConfig,
     active: useURL,
   });
 
@@ -229,6 +240,7 @@ export function useListKeyboardShortcuts(props: {
   pages?: number;
   onSelectAll?: () => void;
   onSelectNone?: () => void;
+  onInvertSelection?: () => void;
 }) {
   const {
     currentPage,
@@ -237,6 +249,7 @@ export function useListKeyboardShortcuts(props: {
     pages = 0,
     onSelectAll,
     onSelectNone,
+    onInvertSelection,
   } = props;
 
   // set up hotkeys
@@ -298,12 +311,14 @@ export function useListKeyboardShortcuts(props: {
   useEffect(() => {
     Mousetrap.bind("s a", () => onSelectAll?.());
     Mousetrap.bind("s n", () => onSelectNone?.());
+    Mousetrap.bind("s i", () => onInvertSelection?.());
 
     return () => {
       Mousetrap.unbind("s a");
       Mousetrap.unbind("s n");
+      Mousetrap.unbind("s i");
     };
-  }, [onSelectAll, onSelectNone]);
+  }, [onSelectAll, onSelectNone, onInvertSelection]);
 }
 
 export function useListSelect<T extends IHasID = IHasID>(items: T[]) {
@@ -420,6 +435,14 @@ export function useListSelect<T extends IHasID = IHasID>(items: T[]) {
     setLastClickedId(undefined);
   }
 
+  function onInvertSelection() {
+    setItemsSelected((prevSelected) => {
+      const selectedSet = new Set(prevSelected.map((item) => item.id));
+      return items.filter((item) => !selectedSet.has(item.id));
+    });
+    setLastClickedId(undefined);
+  }
+
   // TODO - this is for backwards compatibility
   const getSelected = useCallback(() => itemsSelected, [itemsSelected]);
 
@@ -433,6 +456,7 @@ export function useListSelect<T extends IHasID = IHasID>(items: T[]) {
     onSelectChange,
     onSelectAll,
     onSelectNone,
+    onInvertSelection,
     hasSelection,
   };
 }

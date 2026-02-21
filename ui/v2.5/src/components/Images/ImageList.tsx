@@ -22,11 +22,13 @@ import Gallery, { RenderImageProps } from "react-photo-gallery";
 import { ExportDialog } from "../Shared/ExportDialog";
 import { objectTitle } from "src/core/files";
 import { useConfigurationContext } from "src/hooks/Config";
-import { ImageGridCard } from "./ImageGridCard";
+import { ImageCardGrid } from "./ImageCardGrid";
 import { View } from "../List/views";
 import { IItemListOperation } from "../List/FilteredListToolbar";
 import { FileSize } from "../Shared/FileSize";
 import { PatchComponent } from "src/patch";
+import { GenerateDialog } from "../Dialogs/GenerateDialog";
+import { useModal } from "src/hooks/modal";
 
 interface IImageWallProps {
   images: GQL.SlimImageDataFragment[];
@@ -35,6 +37,9 @@ interface IImageWallProps {
   pageCount: number;
   handleImageOpen: (index: number) => void;
   zoomIndex: number;
+  selectedIds?: Set<string>;
+  onSelectChange?: (id: string, selected: boolean, shiftKey: boolean) => void;
+  selecting?: boolean;
 }
 
 const zoomWidths = [280, 340, 480, 640];
@@ -49,6 +54,9 @@ const ImageWall: React.FC<IImageWallProps> = ({
   images,
   zoomIndex,
   handleImageOpen,
+  selectedIds,
+  onSelectChange,
+  selecting,
 }) => {
   const { configuration } = useConfigurationContext();
   const uiConfig = configuration?.ui;
@@ -121,9 +129,26 @@ const ImageWall: React.FC<IImageWallProps> = ({
           ? props.photo.height
           : targetRowHeight(containerRef.current?.offsetWidth ?? 0) *
             maxHeightFactor;
-      return <ImageWallItem {...props} maxHeight={maxHeight} />;
+      const imageId = props.photo.key;
+      if (!imageId) {
+        return null;
+      }
+      return (
+        <ImageWallItem
+          {...props}
+          maxHeight={maxHeight}
+          selected={selectedIds?.has(imageId)}
+          onSelectedChanged={
+            onSelectChange
+              ? (selected, shiftKey) =>
+                  onSelectChange(imageId, selected, shiftKey)
+              : undefined
+          }
+          selecting={selecting}
+        />
+      );
     },
-    [targetRowHeight]
+    [targetRowHeight, selectedIds, onSelectChange, selecting]
   );
 
   return (
@@ -240,7 +265,7 @@ const ImageListImages: React.FC<IImageListImages> = ({
 
   if (filter.displayMode === DisplayMode.Grid) {
     return (
-      <ImageGridCard
+      <ImageCardGrid
         images={images}
         selectedIds={selectedIds}
         zoomIndex={filter.zoomIndex}
@@ -258,6 +283,9 @@ const ImageListImages: React.FC<IImageListImages> = ({
         pageCount={pageCount}
         handleImageOpen={handleImageOpen}
         zoomIndex={filter.zoomIndex}
+        selectedIds={selectedIds}
+        onSelectChange={onSelectChange}
+        selecting={!!selectedIds && selectedIds.size > 0}
       />
     );
   }
@@ -330,11 +358,27 @@ export const ImageList: React.FC<IImageList> = PatchComponent(
 
     const filterMode = GQL.FilterMode.Images;
 
-    const otherOperations = [
+    const { modal, showModal, closeModal } = useModal();
+
+    const otherOperations: IItemListOperation<GQL.FindImagesQueryResult>[] = [
       ...extraOperations,
       {
         text: intl.formatMessage({ id: "actions.view_random" }),
         onClick: viewRandom,
+      },
+      {
+        text: `${intl.formatMessage({ id: "actions.generate" })}…`,
+        onClick: (result, filter, selectedIds) => {
+          showModal(
+            <GenerateDialog
+              type="image"
+              selectedIds={Array.from(selectedIds.values())}
+              onClose={() => closeModal()}
+            />
+          );
+          return Promise.resolve();
+        },
+        isDisplayed: showWhenSelected,
       },
       {
         text: intl.formatMessage({ id: "actions.export" }),
@@ -471,6 +515,7 @@ export const ImageList: React.FC<IImageList> = PatchComponent(
         view={view}
         selectable
       >
+        {modal}
         <ItemList
           view={view}
           otherOperations={otherOperations}
