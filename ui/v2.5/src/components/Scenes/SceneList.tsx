@@ -26,7 +26,10 @@ import { View } from "../List/views";
 import { FileSize } from "../Shared/FileSize";
 import { LoadedContent } from "../List/PagedList";
 import { useCloseEditDelete, useFilterOperations } from "../List/util";
-import { ListOperations } from "../List/ListOperationButtons";
+import {
+  IListFilterOperation,
+  ListOperations,
+} from "../List/ListOperationButtons";
 import { useFilteredItemList } from "../List/ItemList";
 import {
   Sidebar,
@@ -351,6 +354,9 @@ interface IFilteredScenes {
   view?: View;
   alterQuery?: boolean;
   fromGroupId?: string;
+  extraOperations?: (
+    selectedItems: GQL.SlimSceneDataFragment[]
+  ) => IListFilterOperation[];
 }
 
 export const FilteredSceneList = PatchComponent(
@@ -362,7 +368,14 @@ export const FilteredSceneList = PatchComponent(
 
     const searchFocus = useFocus();
 
-    const { filterHook, defaultSort, view, alterQuery, fromGroupId } = props;
+    const {
+      filterHook,
+      defaultSort,
+      view,
+      alterQuery,
+      fromGroupId,
+      extraOperations,
+    } = props;
 
     // States
     const {
@@ -542,6 +555,7 @@ export const FilteredSceneList = PatchComponent(
     }
 
     const otherOperations = [
+      ...(extraOperations?.(selectedItems) ?? []),
       {
         text: intl.formatMessage({ id: "actions.play" }),
         onClick: () => onPlay(),

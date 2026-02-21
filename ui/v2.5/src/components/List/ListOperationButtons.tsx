@@ -247,7 +247,7 @@ export const ListOperationButtons: React.FC<IListOperationButtonsProps> = ({
     }
 
     return (
-      <OperationDropdown>
+      <OperationDropdown menuPortalTarget={document.body}>
         {options.length > 0 ? options : undefined}
       </OperationDropdown>
     );
