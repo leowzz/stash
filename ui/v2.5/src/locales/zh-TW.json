@@ -730,6 +730,10 @@
                         "description": "當影片播放完畢時，自動跳至下一個短片",
                         "heading": "持續播放播放清單"
                     },
+                    "controls_autohide_timeout": {
+                        "description": "無操作時控制項自動隱藏的等待時間。單位：毫秒 (ms)。",
+                        "heading": "控制項自動隱藏時間"
+                    },
                     "show_scrubber": "顯示預覽軸",
                     "track_activity": "追蹤使用活動",
                     "vr_tag": {

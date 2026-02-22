@@ -388,6 +388,12 @@ export const SettingsInterfacePanel: React.FC = PatchComponent(
             checked={ui.alwaysStartFromBeginning ?? undefined}
             onChange={(v) => saveUI({ alwaysStartFromBeginning: v })}
           />
+          <NumberSetting
+            headingID="config.ui.scene_player.options.controls_autohide_timeout.heading"
+            subHeadingID="config.ui.scene_player.options.controls_autohide_timeout.description"
+            value={ui.scenePlayerInactivityTimeoutMs ?? 700}
+            onChange={(v) => saveUI({ scenePlayerInactivityTimeoutMs: v })}
+          />
           <BooleanSetting
             id="track-activity"
             headingID="config.ui.scene_player.options.track_activity"
