@@ -56,6 +56,7 @@ import { PatchComponent, PatchContainerComponent } from "src/patch";
 import { SceneMergeModal } from "../SceneMergeDialog";
 import { goBackOrReplace } from "src/utils/history";
 import { FormattedDate } from "src/components/Shared/Date";
+import { useSmoothStreamContext } from "src/hooks/SmoothStream/context";
 
 const SubmitStashBoxDraft = lazyComponent(
   () => import("src/components/Dialogs/SubmitDraft")
@@ -760,6 +761,11 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
   history,
   match,
 }) => {
+  const {
+    enabled: smoothEnabled,
+    mode: smoothMode,
+    randomEnabled: smoothRandomEnabled,
+  } = useSmoothStreamContext();
   const { id } = match.params;
   const { configuration } = useConfigurationContext();
   const { data, loading, error } = useFindScene(id);
@@ -800,6 +806,10 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
   );
 
   const _setTimestamp = useRef<(value: number) => void>();
+  const _getCurrentTime = useRef<(() => number) | undefined>();
+  const smoothHistory = useRef<
+    Array<{ sceneID: string; timestamp: number; page?: number }>
+  >([]);
   const initialTimestamp = useMemo(() => {
     const t = queryParams.get("t");
     if (!t) return 0;
@@ -829,6 +839,17 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
     if (_setTimestamp.current) {
       _setTimestamp.current(value);
     }
+  }
+
+  function getSetCurrentTime(fn: () => number) {
+    _getCurrentTime.current = fn;
+  }
+
+  function getCurrentTime() {
+    if (_getCurrentTime.current) {
+      return _getCurrentTime.current();
+    }
+    return scene?.resume_time ?? 0;
   }
 
   // set up hotkeys
@@ -905,16 +926,22 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
     return scenes;
   }
 
-  function loadScene(sceneID: string, autoPlay?: boolean, newPage?: number) {
+  function loadScene(
+    sceneID: string,
+    autoPlay?: boolean,
+    newPage?: number,
+    start?: number
+  ) {
     const sceneLink = sceneQueue.makeLink(sceneID, {
       newPage,
       autoPlay,
       continue: continuePlaylist,
+      start,
     });
     history.replace(sceneLink);
   }
 
-  async function queueNext(autoPlay: boolean) {
+  async function queueNextCore(autoPlay: boolean) {
     if (currentQueueIndex === -1) return;
 
     if (currentQueueIndex < queueScenes.length - 1) {
@@ -932,7 +959,7 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
     }
   }
 
-  async function queuePrevious(autoPlay: boolean) {
+  async function queuePreviousCore(autoPlay: boolean) {
     if (currentQueueIndex === -1) return;
 
     if (currentQueueIndex > 0) {
@@ -957,6 +984,7 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
     if (sceneQueue.query) {
       const { query } = sceneQueue;
       const pages = Math.ceil(queueTotal / query.itemsPerPage);
+      if (pages <= 0) return;
       const page = Math.floor(Math.random() * pages) + 1;
       const index = Math.floor(
         Math.random() * Math.min(query.itemsPerPage, queueTotal)
@@ -973,6 +1001,242 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
       const index = Math.floor(Math.random() * queueTotal);
       loadScene(queueScenes[index].id, autoPlay);
     }
+  }
+
+  function getScenePage(sceneID: string) {
+    if (!sceneQueue.query) return;
+
+    // find the page that the scene is on
+    const index = queueScenes.findIndex((s) => s.id === sceneID);
+
+    if (index === -1) return;
+
+    const perPage = sceneQueue.query.itemsPerPage;
+    return Math.floor((index + queueStart - 1) / perPage) + 1;
+  }
+
+  function pushSmoothHistoryCurrent() {
+    const current = {
+      sceneID: id,
+      timestamp: getCurrentTime(),
+      page: getScenePage(id),
+    };
+    const truncated = smoothHistory.current.concat(current).slice(-20);
+    smoothHistory.current = truncated;
+  }
+
+  function popSmoothHistory() {
+    const historyItems = smoothHistory.current;
+    if (historyItems.length === 0) return;
+
+    const target = historyItems[historyItems.length - 1];
+    smoothHistory.current = historyItems.slice(0, -1);
+    return target;
+  }
+
+  function getSortedMarkerSeconds() {
+    const source = scene?.scene_markers ?? [];
+    const markerSeconds = source
+      .map((marker) => marker.seconds)
+      .filter((seconds) => Number.isFinite(seconds));
+    const uniqueSeconds = Array.from(new Set(markerSeconds));
+    uniqueSeconds.sort((a, b) => a - b);
+    return uniqueSeconds;
+  }
+
+  function findNextMarkerSeconds() {
+    const currentTime = getCurrentTime();
+    const markerSeconds = getSortedMarkerSeconds();
+    return markerSeconds.find((seconds) => seconds > currentTime + 0.001);
+  }
+
+  function findPreviousMarkerSeconds() {
+    const currentTime = getCurrentTime();
+    const markerSeconds = getSortedMarkerSeconds();
+    const previousMarkers = markerSeconds.filter(
+      (seconds) => seconds < currentTime - 0.001
+    );
+    return previousMarkers[previousMarkers.length - 1];
+  }
+
+  async function queueRandomMarker(autoPlay: boolean) {
+    if (sceneQueue.query) {
+      const { query } = sceneQueue;
+      const pages = Math.ceil(queueTotal / query.itemsPerPage);
+      if (pages <= 0) return;
+
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const page = Math.floor(Math.random() * pages) + 1;
+        const filterCopy = sceneQueue.query.clone();
+        filterCopy.currentPage = page;
+
+        const queryResults = await queryFindScenes(filterCopy);
+        const candidateScenes = queryResults.data.findScenes.scenes.filter(
+          (queuedScene) => (queuedScene.scene_markers?.length ?? 0) > 0
+        );
+
+        if (candidateScenes.length === 0) {
+          continue;
+        }
+
+        const randomScene =
+          candidateScenes[Math.floor(Math.random() * candidateScenes.length)];
+        const markers = randomScene.scene_markers ?? [];
+        if (markers.length === 0) {
+          continue;
+        }
+
+        const marker = markers[Math.floor(Math.random() * markers.length)];
+        const markerSeconds = marker.seconds;
+
+        if (randomScene.id === id) {
+          setTimestamp(markerSeconds);
+        } else {
+          loadScene(randomScene.id, autoPlay, page, markerSeconds);
+        }
+        return;
+      }
+    }
+
+    const candidateScenes = queueScenes.filter(
+      (queuedScene) => (queuedScene.scene_markers?.length ?? 0) > 0
+    );
+
+    if (candidateScenes.length === 0) {
+      await queueRandom(autoPlay);
+      return;
+    }
+
+    const randomScene =
+      candidateScenes[Math.floor(Math.random() * candidateScenes.length)];
+
+    if (!randomScene?.scene_markers?.length) {
+      await queueRandom(autoPlay);
+      return;
+    }
+
+    const marker =
+      randomScene.scene_markers[
+        Math.floor(Math.random() * randomScene.scene_markers.length)
+      ];
+
+    if (randomScene.id === id) {
+      setTimestamp(marker.seconds);
+      return;
+    }
+
+    loadScene(
+      randomScene.id,
+      autoPlay,
+      getScenePage(randomScene.id),
+      marker.seconds
+    );
+  }
+
+  async function queueNext(autoPlay: boolean) {
+    if (!smoothEnabled) {
+      await queueNextCore(autoPlay);
+      return;
+    }
+
+    if (smoothRandomEnabled) {
+      pushSmoothHistoryCurrent();
+      if (smoothMode === "marker") {
+        await queueRandomMarker(autoPlay);
+      } else {
+        await queueRandom(autoPlay);
+      }
+      return;
+    }
+
+    if (smoothMode === "marker") {
+      const nextMarkerSeconds = findNextMarkerSeconds();
+      if (nextMarkerSeconds !== undefined) {
+        pushSmoothHistoryCurrent();
+        setTimestamp(nextMarkerSeconds);
+        return;
+      }
+
+      if (currentQueueIndex !== -1) {
+        if (currentQueueIndex < queueScenes.length - 1) {
+          const nextScene = queueScenes[currentQueueIndex + 1];
+          const nextStart = nextScene.scene_markers?.[0]?.seconds;
+          pushSmoothHistoryCurrent();
+          loadScene(
+            nextScene.id,
+            autoPlay,
+            getScenePage(nextScene.id),
+            nextStart
+          );
+          return;
+        }
+
+        if (
+          currentQueueIndex === queueScenes.length - 1 &&
+          queueHasMoreScenes
+        ) {
+          const loadedScenes = await onQueueMoreScenes();
+          if (loadedScenes && loadedScenes.length > 0) {
+            const newPage = (sceneQueue.query?.currentPage ?? 0) + 1;
+            const firstScene = loadedScenes[0];
+            const nextStart = firstScene.scene_markers?.[0]?.seconds;
+            pushSmoothHistoryCurrent();
+            loadScene(firstScene.id, autoPlay, newPage, nextStart);
+            return;
+          }
+        }
+      }
+
+      if (queueScenes.length > 0) {
+        const firstScene = queueScenes[0];
+        const firstStart = firstScene.scene_markers?.[0]?.seconds;
+        pushSmoothHistoryCurrent();
+        loadScene(
+          firstScene.id,
+          autoPlay,
+          getScenePage(firstScene.id),
+          firstStart
+        );
+        return;
+      }
+
+      return;
+    }
+
+    pushSmoothHistoryCurrent();
+    await queueNextCore(autoPlay);
+  }
+
+  async function queuePrevious(autoPlay: boolean) {
+    if (!smoothEnabled) {
+      await queuePreviousCore(autoPlay);
+      return;
+    }
+
+    if (!smoothRandomEnabled && smoothMode === "marker") {
+      const previousMarkerSeconds = findPreviousMarkerSeconds();
+      if (previousMarkerSeconds !== undefined) {
+        setTimestamp(previousMarkerSeconds);
+        return;
+      }
+    }
+
+    const historyItem = popSmoothHistory();
+    if (historyItem) {
+      if (historyItem.sceneID === id) {
+        setTimestamp(historyItem.timestamp);
+      } else {
+        loadScene(
+          historyItem.sceneID,
+          autoPlay,
+          historyItem.page,
+          historyItem.timestamp
+        );
+      }
+      return;
+    }
+
+    await queuePreviousCore(autoPlay);
   }
 
   function onComplete() {
@@ -992,18 +1256,6 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
     } else {
       goBackOrReplace(history, "/scenes");
     }
-  }
-
-  function getScenePage(sceneID: string) {
-    if (!sceneQueue.query) return;
-
-    // find the page that the scene is on
-    const index = queueScenes.findIndex((s) => s.id === sceneID);
-
-    if (index === -1) return;
-
-    const perPage = sceneQueue.query.itemsPerPage;
-    return Math.floor((index + queueStart - 1) / perPage) + 1;
   }
 
   function onQueueSceneClicked(sceneID: string) {
@@ -1045,6 +1297,7 @@ const SceneLoader: React.FC<RouteComponentProps<ISceneParams>> = ({
           permitLoop={!continuePlaylist}
           initialTimestamp={initialTimestamp}
           sendSetTimestamp={getSetTimestamp}
+          sendGetCurrentTime={getSetCurrentTime}
           onComplete={onComplete}
           onNext={() => queueNext(true)}
           onPrevious={() => queuePrevious(true)}

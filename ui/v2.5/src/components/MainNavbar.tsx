@@ -210,7 +210,6 @@ export const MainNavbar: React.FC = () => {
   // react-bootstrap typing bug
   const navbarRef = useRef<HTMLElement | null>(null);
   const intl = useIntl();
-
   const maybeCollapse = useCallback(
     (event: Event) => {
       if (
@@ -297,6 +296,21 @@ export const MainNavbar: React.FC = () => {
   function renderUtilityButtons() {
     return (
       <>
+        <NavLink
+          className="nav-utility"
+          exact
+          to="/smooth"
+          onClick={handleDismiss}
+        >
+          <Button
+            className="minimal d-flex align-items-center h-100"
+            title={intl.formatMessage({ id: "actions.smooth" })}
+          >
+            <span className="d-none d-sm-inline">
+              <FormattedMessage id="actions.smooth" />
+            </span>
+          </Button>
+        </NavLink>
         <Nav.Link
           className="nav-utility"
           href="https://opencollective.com/stashapp"

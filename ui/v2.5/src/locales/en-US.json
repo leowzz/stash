@@ -3,7 +3,18 @@
         "anonymise": "Anonymize",
         "download_anonymised": "Download anonymized",
         "customise": "Customize",
-        "optimise_database": "Optimize Database"
+        "optimise_database": "Optimize Database",
+        "smooth": "Smooth"
+    },
+    "smooth": {
+        "mode": {
+            "video": "Video mode",
+            "marker": "Marker mode"
+        },
+        "random": "Random",
+        "random_play": "Play random now",
+        "enable": "Enable smooth mode",
+        "disable": "Disable smooth mode"
     },
     "config": {
         "tools": {

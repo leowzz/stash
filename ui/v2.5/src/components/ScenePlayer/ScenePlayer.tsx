@@ -241,6 +241,7 @@ interface IScenePlayerProps {
   permitLoop?: boolean;
   initialTimestamp: number;
   sendSetTimestamp: (setTimestamp: (value: number) => void) => void;
+  sendGetCurrentTime: (getCurrentTime: () => number) => void;
   onComplete: () => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -255,6 +256,7 @@ export const ScenePlayer: React.FC<IScenePlayerProps> = PatchComponent(
     permitLoop = true,
     initialTimestamp: _initialTimestamp,
     sendSetTimestamp,
+    sendGetCurrentTime,
     onComplete,
     onNext,
     onPrevious,
@@ -332,6 +334,16 @@ export const ScenePlayer: React.FC<IScenePlayerProps> = PatchComponent(
 
       return () => window.removeEventListener("resize", onResize);
     }, [hideScrubberOverride, fullscreen]);
+
+    useEffect(() => {
+      sendGetCurrentTime(() => {
+        const player = getPlayer();
+        if (!player) {
+          return time;
+        }
+        return player.currentTime();
+      });
+    }, [sendGetCurrentTime, getPlayer, time]);
 
     useEffect(() => {
       sendSetTimestamp((value: number) => {
