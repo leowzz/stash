@@ -756,6 +756,10 @@
                         "description": "当视频结束时播放下一短片",
                         "heading": "默认继续播放清单"
                     },
+                    "controls_autohide_timeout": {
+                        "description": "无交互时控件自动隐藏的等待时间。单位：毫秒 (ms)。",
+                        "heading": "控件自动隐藏时间"
+                    },
                     "show_scrubber": "显示预览轴",
                     "track_activity": "启用短片播放历史记录",
                     "vr_tag": {

@@ -824,6 +824,10 @@
             "description": "Play next scene in queue when video finishes.",
             "heading": "Continue playlist by default"
           },
+          "controls_autohide_timeout": {
+            "description": "Time before controls auto-hide when no interaction. Unit: milliseconds (ms).",
+            "heading": "Controls auto-hide timeout"
+          },
           "disable_mobile_media_auto_rotate": "Disable auto-rotate of fullscreen media on mobile",
           "enable_chromecast": "Enable Chromecast",
           "show_ab_loop_controls": "Show AB loop controls",

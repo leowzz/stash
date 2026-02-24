@@ -51,6 +51,22 @@ import abLoopPlugin from "videojs-abloop";
 import ScreenUtils from "src/utils/screen";
 import { PatchComponent } from "src/patch";
 
+const DEFAULT_INACTIVITY_TIMEOUT_MS = 700;
+const MIN_INACTIVITY_TIMEOUT_MS = 300;
+const MAX_INACTIVITY_TIMEOUT_MS = 10000;
+
+function resolveInactivityTimeoutMs(value: number | undefined): number {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return DEFAULT_INACTIVITY_TIMEOUT_MS;
+  }
+
+  const rounded = Math.round(value);
+  return Math.min(
+    MAX_INACTIVITY_TIMEOUT_MS,
+    Math.max(MIN_INACTIVITY_TIMEOUT_MS, rounded)
+  );
+}
+
 // register videojs plugins
 airplay(videojs);
 chromecast(videojs);
@@ -364,7 +380,9 @@ export const ScenePlayer: React.FC<IScenePlayerProps> = PatchComponent(
         },
         nativeControlsForTouch: false,
         playbackRates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
-        inactivityTimeout: 700,
+        inactivityTimeout: resolveInactivityTimeoutMs(
+          uiConfig?.scenePlayerInactivityTimeoutMs
+        ),
         preload: "none",
         playsinline: true,
         techOrder: ["chromecast", "html5"],
@@ -443,7 +461,11 @@ export const ScenePlayer: React.FC<IScenePlayerProps> = PatchComponent(
       // Note: interfaceConfig?.autostartVideo is intentionally excluded to prevent
       // player re-initialization when toggling autostart (which would interrupt playback)
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [uiConfig?.showAbLoopControls, uiConfig?.enableChromecast]);
+    }, [
+      uiConfig?.showAbLoopControls,
+      uiConfig?.enableChromecast,
+      uiConfig?.scenePlayerInactivityTimeoutMs,
+    ]);
 
     useEffect(() => {
       const player = getPlayer();

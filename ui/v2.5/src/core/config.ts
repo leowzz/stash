@@ -75,6 +75,8 @@ export interface IUIConfig {
   showRangeMarkers?: boolean;
   // if true continue scene will always play from the beginning
   alwaysStartFromBeginning?: boolean;
+  // controls auto-hide timeout in scene player (milliseconds)
+  scenePlayerInactivityTimeoutMs?: number;
   // if true enable activity tracking
   trackActivity?: boolean;
   // the minimum percentage of scene duration which a scene must be played
