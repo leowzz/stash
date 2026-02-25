@@ -49,7 +49,7 @@ const criterionOptions = [
   createStringCriterionOption("details"),
   createStringCriterionOption("photographer"),
   PathCriterionOption,
-  createStringCriterionOption("checksum", "media_info.checksum"),
+  createStringCriterionOption("checksum", "media_info.md5"),
   RatingCriterionOption,
   OrganizedCriterionOption,
   AverageResolutionCriterionOption,

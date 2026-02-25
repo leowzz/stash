@@ -47,7 +47,7 @@ const criterionOptions = [
   createStringCriterionOption("code", "scene_code"),
   createStringCriterionOption("details"),
   createStringCriterionOption("photographer"),
-  createMandatoryStringCriterionOption("checksum", "media_info.checksum"),
+  createMandatoryStringCriterionOption("checksum", "media_info.md5"),
   PhashCriterionOption,
   PathCriterionOption,
   GalleriesCriterionOption,
