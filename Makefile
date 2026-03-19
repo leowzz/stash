@@ -129,7 +129,7 @@ phasher: build-flags
 
 # builds dynamically-linked debug binaries
 .PHONY: build
-build: stash phasher
+build: stash
 
 # builds dynamically-linked PIE release binaries
 .PHONY: build-release
