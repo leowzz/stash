@@ -487,16 +487,21 @@ export const SidebarFolderFilter: React.FC<
     return newCriterion;
   }, [option.type, filter]);
 
+  const subDirsSelected = criterion.value?.depth === -1;
+
   // if there are multiple values or excluded values, then we show none of the
   // current values
   const multipleSelected =
     criterion.value.items.length > 1 || criterion.value.excluded.length > 0;
 
   function onSelect(folder: IFolder) {
+    // maintain sub-folder select if present
+    const depth = subDirsSelected ? -1 : 0;
+
     const c = criterion.clone() as FolderCriterion;
     c.value = {
       items: [{ id: folder.id, label: folder.path }],
-      depth: 0,
+      depth,
       excluded: [],
     };
 
@@ -549,8 +554,6 @@ export const SidebarFolderFilter: React.FC<
       onSelect(matchingFolders[0]);
     }
   }
-
-  const subDirsSelected = criterion.value?.depth === -1;
 
   const selectedList = useMemo(() => {
     if (multipleSelected) {
