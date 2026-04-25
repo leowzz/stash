@@ -216,10 +216,6 @@ jobs:
     # upload-artifact@v4 strips the common path prefix (dist/), so files are at the artifact root
     - name: Collect binaries
       run: |
-#        docker exec -t build /bin/bash -c "make build-cc-windows" &
-#        docker exec -t build /bin/bash -c "make build-cc-macos" &
-#        docker exec -t build /bin/bash -c "make build-cc-linux" &
-#        wait
         mkdir -p dist
         cp artifacts/build-*/* dist/
         chmod +x dist/*
