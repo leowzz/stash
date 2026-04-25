@@ -5,7 +5,7 @@ import {
   TagsCriterion,
   TagsCriterionOption,
 } from "src/models/list-filter/criteria/tags";
-import { SceneMarkerList } from "src/components/Scenes/SceneMarkerList";
+import { FilteredSceneMarkerList } from "src/components/Scenes/SceneMarkerList";
 import { View } from "src/components/List/views";
 import { useTagUpdate } from "src/core/StashService";
 import { useToast } from "src/hooks/Toast";
@@ -115,7 +115,7 @@ export const TagMarkersPanel: React.FC<ITagMarkersPanel> = ({
   ];
 
   return (
-    <SceneMarkerList
+    <FilteredSceneMarkerList
       filterHook={filterHook}
       alterQuery={active}
       view={View.TagMarkers}
