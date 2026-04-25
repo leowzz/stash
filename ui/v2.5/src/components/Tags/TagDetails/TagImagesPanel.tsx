@@ -1,7 +1,7 @@
 import React from "react";
 import * as GQL from "src/core/generated-graphql";
 import { useTagFilterHook } from "src/core/tags";
-import { ImageList } from "src/components/Images/ImageList";
+import { FilteredImageList } from "src/components/Images/ImageList";
 import { View } from "src/components/List/views";
 import { useTagUpdate } from "src/core/StashService";
 import { useToast } from "src/hooks/Toast";
@@ -74,7 +74,7 @@ export const TagImagesPanel: React.FC<ITagImagesPanel> = ({
   ];
 
   return (
-    <ImageList
+    <FilteredImageList
       filterHook={filterHook}
       alterQuery={active}
       extraOperations={otherOperations}
